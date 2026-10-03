@@ -19,8 +19,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Dancing+Script:wght@500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20261003-63" />
-  <script src="script.js?v=20261003-10" defer></script>
+  <link rel="stylesheet" href="style.css?v=20261003-65" />
+  <script src="script.js?v=20261003-13" defer></script>
 </head>
 <body class="intro-active">
   <a class="skip-link" href="#main-content">Đi đến nội dung chính</a>
@@ -35,7 +35,7 @@
           <span>Save our date</span>
           <strong>17 · 10 · 2026</strong>
         </span>
-        <img class="envelope-image" src="assets/evenlope.jpg" alt="" />
+        <img class="envelope-image" src="assets/evenlope.jpg" alt="" fetchpriority="high" decoding="async" />
         <span class="opening-flower opening-flower--upper-left" aria-hidden="true">
           <img src="assets/floral-cluster.png" alt="" />
         </span>
@@ -71,10 +71,10 @@
         </span>
 
         <div class="polaroid hero-photo hero-photo--left" data-reveal>
-          <img src="assets/center-left.jpg" alt="Phan Vũ và Quỳnh Như đứng cạnh nhau trong lễ phục cưới" />
+          <img src="assets/center-left.jpg" alt="Phan Vũ và Quỳnh Như đứng cạnh nhau trong lễ phục cưới" fetchpriority="high" decoding="async" />
         </div>
         <div class="polaroid hero-photo hero-photo--right" data-reveal>
-          <img src="assets/dance-right.jpg" alt="Phan Vũ và Quỳnh Như nâng tay nhau trong ảnh cưới" />
+          <img src="assets/dance-right.jpg" alt="Phan Vũ và Quỳnh Như nâng tay nhau trong ảnh cưới" fetchpriority="high" decoding="async" />
         </div>
 
         <div class="save-card" data-reveal>
@@ -160,7 +160,7 @@
         </div>
       </div>
       <div class="story-portrait" data-reveal>
-        <img src="assets/main.jpg" alt="Phan Vũ và Quỳnh Như trong lễ phục cưới" />
+        <img src="assets/main.jpg" alt="Phan Vũ và Quỳnh Như trong lễ phục cưới" loading="lazy" decoding="async" />
       </div>
     </section>
 
@@ -175,7 +175,7 @@
       <div class="family-grid">
         <article class="family-card" data-reveal>
           <div class="polaroid family-photo family-photo--groom">
-            <img src="assets/chu-re.jpg" alt="Chú rể Phan Vũ" />
+            <img src="assets/chu-re.jpg" alt="Chú rể Phan Vũ" loading="lazy" decoding="async" />
             <div class="family-photo-caption">
               <span>Chú rể</span>
               <h3>Phan Vũ</h3>
@@ -197,7 +197,7 @@
 
         <article class="family-card" data-reveal>
           <div class="polaroid family-photo family-photo--bride">
-            <img src="assets/co-dau.jpg" alt="Cô dâu Trương Quỳnh Như" />
+            <img src="assets/co-dau.jpg" alt="Cô dâu Trương Quỳnh Như" loading="lazy" decoding="async" />
             <div class="family-photo-caption">
               <span>Cô dâu</span>
               <h3>Quỳnh Như</h3>
@@ -253,7 +253,7 @@
 
       <div class="wedding-carousel" data-gallery aria-label="Album ảnh cưới">
         <div class="carousel-stage">
-          <img class="carousel-main-image" data-carousel-image src="assets/cuoi-1.jpg" alt="Ảnh cưới 1 của Phan Vũ và Quỳnh Như" />
+          <img class="carousel-main-image" data-carousel-image src="assets/cuoi-1.jpg" alt="Ảnh cưới 1 của Phan Vũ và Quỳnh Như" loading="lazy" decoding="async" />
           <button class="carousel-open" type="button" data-carousel-open aria-label="Phóng to ảnh hiện tại">
             <span aria-hidden="true">Phóng to ảnh</span>
           </button>
@@ -263,11 +263,11 @@
           <button class="carousel-arrow carousel-arrow--next" type="button" data-carousel-next aria-label="Ảnh tiếp theo">
             <span aria-hidden="true">&#8594;</span>
           </button>
-          <p class="carousel-count" aria-live="polite"><span data-carousel-current>01</span><span aria-hidden="true"> / </span><span data-carousel-total>09</span></p>
+          <p class="carousel-count" aria-live="polite"><span data-carousel-current>01</span><span aria-hidden="true"> / </span><span data-carousel-total>10</span></p>
         </div>
         <div class="carousel-thumbnails" role="group" tabindex="0" aria-label="Chọn ảnh xem trước">
           <button class="carousel-thumbnail is-active" type="button" data-carousel-index="0" aria-label="Xem ảnh cưới 1" aria-pressed="true">
-            <img src="assets/cuoi-1.jpg" alt="" />
+            <img src="assets/cuoi-1.jpg" alt="" loading="lazy" decoding="async" />
           </button>
           <button class="carousel-thumbnail" type="button" data-carousel-index="1" aria-label="Xem ảnh cưới 2" aria-pressed="false">
             <img src="assets/cuoi-2.jpg" alt="" loading="lazy" />
@@ -292,6 +292,9 @@
           </button>
           <button class="carousel-thumbnail" type="button" data-carousel-index="8" aria-label="Xem ảnh cưới 9" aria-pressed="false">
             <img src="assets/cuoi-9.jpg" alt="" loading="lazy" />
+          </button>
+          <button class="carousel-thumbnail" type="button" data-carousel-index="9" aria-label="Xem ảnh cưới 10" aria-pressed="false">
+            <img src="assets/cuoi-10.jpg" alt="" loading="lazy" decoding="async" />
           </button>
         </div>
       </div>
@@ -339,12 +342,13 @@
           <span class="couple-name">Như</span>
         </p>
       </div>
-      <img class="closing-photo" src="assets/couple-portrait.webp" alt="Phan Vũ và Quỳnh Như trong lễ phục cưới" data-reveal />
+      <img class="closing-photo" src="assets/footer.jpg" alt="Phan Vũ và Quỳnh Như trong lễ phục cưới" loading="lazy" decoding="async" data-reveal />
     </section>
   </main>
 
   <footer class="site-footer">
     <p>Thân thương · 17.10.2026</p>
+    <p class="view-count" data-view-count hidden aria-live="polite">♡ <span>0</span> lượt ghé thăm</p>
   </footer>
 
   <audio data-wedding-music src="assets/wedding-music.mp3" preload="metadata"></audio>

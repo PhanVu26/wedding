@@ -6,6 +6,8 @@ const WISHES_HEADERS = ["Thời gian", "Tên", "Lời chúc"];
 const GUESTS_SHEET_NAME = "Khách mời";
 const GUESTS_HEADERS = ["Mã mời", "Lời xưng hô", "Tên khách", "Link cá nhân"];
 const WEDDING_WEBSITE_URL = "https://phanvu26.github.io/wedding/";
+const STATS_SHEET_NAME = "Thống kê";
+const STATS_HEADERS = ["Chỉ số", "Giá trị"];
 
 function doPost(event) {
   try {
@@ -82,6 +84,10 @@ function doGet(event) {
     if (SPREADSHEET_ID === "PASTE_SPREADSHEET_ID_HERE") throw new Error("Chưa cấu hình ID bảng tính.");
 
     const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    getOrCreateSheet(spreadsheet, GUESTS_SHEET_NAME, GUESTS_HEADERS);
+    if (action === "view") {
+      return jsonResponse({ ok: true, views: incrementViewCount(spreadsheet) });
+    }
     if (action === "guest") {
       return jsonResponse({ ok: true, guest: findGuest(spreadsheet, event.parameter.code) });
     }
@@ -125,6 +131,28 @@ function createGuestInviteLinks() {
     return [code, row[1], row[2], `${WEDDING_WEBSITE_URL}?guest=${encodeURIComponent(code)}`];
   });
   range.setValues(rows);
+}
+
+function incrementViewCount(spreadsheet) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(5000);
+  try {
+    const sheet = getOrCreateSheet(spreadsheet, STATS_SHEET_NAME, STATS_HEADERS);
+    const lastRow = sheet.getLastRow();
+    const rows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 2).getValues() : [];
+    const rowIndex = rows.findIndex((row) => String(row[0]).trim() === "Lượt xem");
+    if (rowIndex === -1) {
+      sheet.appendRow(["Lượt xem", 1]);
+      return 1;
+    }
+
+    const countCell = sheet.getRange(rowIndex + 2, 2);
+    const views = (Number(countCell.getValue()) || 0) + 1;
+    countCell.setValue(views);
+    return views;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function findGuest(spreadsheet, code) {

@@ -4,7 +4,7 @@ const openInvitationButton = document.querySelector("[data-open-invitation]");
 const weddingMusic = document.querySelector("[data-wedding-music]");
 const musicToggle = document.querySelector("[data-music-toggle]");
 const musicToggleLabel = document.querySelector("[data-music-toggle-label]");
-const musicStartSeconds = 20;
+const musicStartSeconds = 10;
 let skipIntroWhenMetadataLoads = false;
 const main = document.querySelector("#main-content");
 const heroTitle = document.querySelector("#hero-title");
@@ -12,12 +12,42 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").match
 const RSVP_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzJAVL7HEtQYlOqZNUy-aAK7STp4eqWeczwQoUv0LGr2Xd7oTFzfDfKgg-8F-j8vlIP6g/exec";
 const invitationSalutation = document.querySelector("[data-invitation-salutation]");
 const invitationGuest = document.querySelector("[data-invitation-guest]");
+const viewCount = document.querySelector("[data-view-count]");
+const isMobileViewport = window.matchMedia("(max-width: 680px)").matches;
+const autoScrollSpeed = isMobileViewport ? 0.16 : 0.065;
+const autoScrollResumeDelay = isMobileViewport ? 1500 : 3000;
 let autoScrollRequested = false;
 let autoScrollReady = false;
 let autoScrollActive = false;
 let autoScrollFrame = 0;
 let autoScrollLastFrame = 0;
 let autoScrollResumeTimer = 0;
+
+function fetchWishes() {
+  return fetch(`${RSVP_SHEETS_ENDPOINT}?action=wishes`, { cache: "no-store" }).then((response) => {
+    if (!response.ok) throw new Error("Không tải được lời chúc.");
+    return response.json();
+  });
+}
+
+const initialWishesRequest = fetchWishes();
+
+async function recordVisit() {
+  if (!viewCount || sessionStorage.getItem("wedding-view-recorded")) return;
+  try {
+    const response = await fetch(`${RSVP_SHEETS_ENDPOINT}?action=view`, { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.ok || !Number.isFinite(data.views)) return;
+    sessionStorage.setItem("wedding-view-recorded", "true");
+    viewCount.querySelector("span").textContent = new Intl.NumberFormat("vi-VN").format(data.views);
+    viewCount.hidden = false;
+  } catch (_) {
+    // A failed counter request must not affect the invitation experience.
+  }
+}
+
+recordVisit();
 
 async function loadPersonalizedInvitation() {
   const guestCode = new URLSearchParams(window.location.search).get("guest")?.trim();
@@ -37,7 +67,7 @@ async function loadPersonalizedInvitation() {
 
 loadPersonalizedInvitation();
 
-function scheduleAutoScrollResume(delay = 4000) {
+function scheduleAutoScrollResume(delay = autoScrollResumeDelay) {
   window.clearTimeout(autoScrollResumeTimer);
   if (!autoScrollRequested) return;
   autoScrollResumeTimer = window.setTimeout(() => {
@@ -46,7 +76,7 @@ function scheduleAutoScrollResume(delay = 4000) {
   }, delay);
 }
 
-function pauseAutoScroll(resumeDelay = 4000) {
+function pauseAutoScroll(resumeDelay = autoScrollResumeDelay) {
   if (!autoScrollRequested) return;
   autoScrollActive = false;
   autoScrollLastFrame = 0;
@@ -72,7 +102,7 @@ function advanceAutoScroll(timestamp) {
   const scrollingElement = document.scrollingElement;
   const maxScroll = scrollingElement.scrollHeight - window.innerHeight;
   autoScrollLastFrame = timestamp;
-  scrollingElement.scrollTop = Math.min(maxScroll, scrollingElement.scrollTop + elapsed * 0.045);
+  scrollingElement.scrollTop = Math.min(maxScroll, scrollingElement.scrollTop + elapsed * autoScrollSpeed);
 
   if (scrollingElement.scrollTop >= maxScroll) {
     finishAutoScroll();
@@ -326,6 +356,7 @@ const galleryImages = [
   { src: "assets/cuoi-7.jpg", alt: "Ảnh cưới 7 của Phan Vũ và Quỳnh Như" },
   { src: "assets/cuoi-8.jpg", alt: "Ảnh cưới 8 của Phan Vũ và Quỳnh Như" },
   { src: "assets/cuoi-9.jpg", alt: "Ảnh cưới 9 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-10.jpg", alt: "Ảnh cưới 10 của Phan Vũ và Quỳnh Như" },
 ];
 
 const gallery = document.querySelector("[data-gallery]");
@@ -495,9 +526,7 @@ async function loadGuestbook(isRefresh = false) {
   if (!guestbookList || !guestbookStatus) return;
   if (!isRefresh) guestbookStatus.textContent = "Đang tải lời chúc…";
   try {
-    const response = await fetch(`${RSVP_SHEETS_ENDPOINT}?action=wishes`, { cache: "no-store" });
-    if (!response.ok) throw new Error("Không tải được lời chúc.");
-    const data = await response.json();
+    const data = await (isRefresh ? fetchWishes() : initialWishesRequest);
     const wishes = Array.isArray(data.wishes) ? data.wishes : [];
     if (!wishes.length) {
       guestbookList.replaceChildren();
