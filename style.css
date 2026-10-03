@@ -694,7 +694,7 @@ body.intro-active:not(.invitation-revealing) .hero-heading { opacity: 0; transfo
   .opening-signature .couple-rings { transform: none; }
   .scroll-cue { display: none; }
 
-  .story { min-height: calc(max(900px, 100svh) + 240px); padding: 0; }
+  .story { min-height: calc(max(900px, 100svh) + 400px); padding: 0; }
   .section-copy { width: calc(100% - 28px); margin-top: 12px; }
   .section-copy .line-heart { width: 32px; margin-bottom: 0; }
   .date-lockup { column-gap: 6px; }
@@ -709,7 +709,7 @@ body.intro-active:not(.invitation-revealing) .hero-heading { opacity: 0; transfo
   .calendar-table td { height: 31px; }
   .calendar-table td time { width: 25px; height: 25px; font-size: .7rem; }
   .story-portrait { width: 100%; margin: 0; padding-top: 0; }
-  .story-portrait img { height: max(900px, 100svh); min-height: 0; transform: translateY(220px); }
+  .story-portrait img { height: max(900px, 100svh); min-height: 0; transform: translateY(380px); }
 
   .families { padding: 78px 16px 86px; }
   .formal-invitation { margin-bottom: 60px; }

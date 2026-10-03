@@ -16,6 +16,7 @@ const viewCount = document.querySelector("[data-view-count]");
 const isMobileViewport = window.matchMedia("(max-width: 680px)").matches;
 const autoScrollSpeed = isMobileViewport ? 0.16 : 0.065;
 const autoScrollResumeDelay = isMobileViewport ? 1500 : 3000;
+const autoScrollEnabled = isMobileViewport || !reduceMotion;
 let autoScrollRequested = false;
 let autoScrollReady = false;
 let autoScrollActive = false;
@@ -99,12 +100,14 @@ function advanceAutoScroll(timestamp) {
   if (!autoScrollActive) return;
   const lastFrame = autoScrollLastFrame || timestamp;
   const elapsed = Math.min(timestamp - lastFrame, 50);
-  const scrollingElement = document.scrollingElement;
-  const maxScroll = scrollingElement.scrollHeight - window.innerHeight;
+  const scrollingElement = document.scrollingElement || document.documentElement || document.body;
+  const pageHeight = Math.max(scrollingElement.scrollHeight, document.documentElement.scrollHeight, document.body.scrollHeight);
+  const maxScroll = Math.max(0, pageHeight - window.innerHeight);
   autoScrollLastFrame = timestamp;
-  scrollingElement.scrollTop = Math.min(maxScroll, scrollingElement.scrollTop + elapsed * autoScrollSpeed);
+  const nextScrollTop = Math.min(maxScroll, window.scrollY + elapsed * autoScrollSpeed);
+  window.scrollTo(0, nextScrollTop);
 
-  if (scrollingElement.scrollTop >= maxScroll) {
+  if (nextScrollTop >= maxScroll) {
     finishAutoScroll();
     return;
   }
@@ -112,7 +115,7 @@ function advanceAutoScroll(timestamp) {
 }
 
 function startAutoScroll() {
-  if (reduceMotion || !autoScrollRequested || !autoScrollReady || autoScrollActive || autoScrollResumeTimer || document.hidden || body.classList.contains("modal-open")) return;
+  if (!autoScrollEnabled || !autoScrollRequested || !autoScrollReady || autoScrollActive || autoScrollResumeTimer || document.hidden || body.classList.contains("modal-open")) return;
   autoScrollActive = true;
   autoScrollLastFrame = 0;
   autoScrollFrame = window.requestAnimationFrame(advanceAutoScroll);
@@ -146,7 +149,7 @@ function seekPastMusicIntro() {
 
 function enterInvitation() {
   if (!intro || intro.classList.contains("is-opening")) return;
-  autoScrollRequested = !reduceMotion;
+  autoScrollRequested = autoScrollEnabled;
   if (weddingMusic) {
     if (weddingMusic.readyState >= HTMLMediaElement.HAVE_METADATA) seekPastMusicIntro();
     else skipIntroWhenMetadataLoads = true;
