@@ -118,15 +118,18 @@ function startAutoScroll() {
   autoScrollFrame = window.requestAnimationFrame(advanceAutoScroll);
 }
 
-const pauseAutoScrollForActivity = () => pauseAutoScroll();
-window.addEventListener("wheel", pauseAutoScrollForActivity, { passive: true });
-window.addEventListener("touchstart", pauseAutoScrollForActivity, { passive: true });
-window.addEventListener("touchmove", pauseAutoScrollForActivity, { passive: true });
-window.addEventListener("pointerdown", pauseAutoScrollForActivity, { passive: true });
-window.addEventListener("pointermove", pauseAutoScrollForActivity, { passive: true });
-window.addEventListener("mouseout", (event) => {
-  if (!event.relatedTarget) pauseAutoScroll(700);
-});
+if (isMobileViewport) {
+  // Taps should not interrupt the guided experience; only a deliberate swipe pauses it.
+  window.addEventListener("touchmove", () => pauseAutoScroll(1500), { passive: true });
+} else {
+  const pauseAutoScrollForActivity = () => pauseAutoScroll();
+  window.addEventListener("wheel", pauseAutoScrollForActivity, { passive: true });
+  window.addEventListener("pointerdown", pauseAutoScrollForActivity, { passive: true });
+  window.addEventListener("pointermove", pauseAutoScrollForActivity, { passive: true });
+  window.addEventListener("mouseout", (event) => {
+    if (!event.relatedTarget) pauseAutoScroll(700);
+  });
+}
 window.addEventListener("blur", () => pauseAutoScroll(null));
 window.addEventListener("focus", () => scheduleAutoScrollResume(700));
 document.addEventListener("visibilitychange", () => {
