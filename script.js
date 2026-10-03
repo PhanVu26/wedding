@@ -13,16 +13,6 @@ const RSVP_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzJAVL7HEt
 const invitationSalutation = document.querySelector("[data-invitation-salutation]");
 const invitationGuest = document.querySelector("[data-invitation-guest]");
 const viewCount = document.querySelector("[data-view-count]");
-const isMobileViewport = window.matchMedia("(max-width: 680px)").matches;
-const autoScrollSpeed = isMobileViewport ? 0.16 : 0.065;
-const autoScrollResumeDelay = isMobileViewport ? 1500 : 3000;
-const autoScrollEnabled = isMobileViewport || !reduceMotion;
-let autoScrollRequested = false;
-let autoScrollReady = false;
-let autoScrollActive = false;
-let autoScrollFrame = 0;
-let autoScrollLastFrame = 0;
-let autoScrollResumeTimer = 0;
 
 function fetchWishes() {
   return fetch(`${RSVP_SHEETS_ENDPOINT}?action=wishes`, { cache: "no-store" }).then((response) => {
@@ -68,78 +58,6 @@ async function loadPersonalizedInvitation() {
 
 loadPersonalizedInvitation();
 
-function scheduleAutoScrollResume(delay = autoScrollResumeDelay) {
-  window.clearTimeout(autoScrollResumeTimer);
-  if (!autoScrollRequested) return;
-  autoScrollResumeTimer = window.setTimeout(() => {
-    autoScrollResumeTimer = 0;
-    startAutoScroll();
-  }, delay);
-}
-
-function pauseAutoScroll(resumeDelay = autoScrollResumeDelay) {
-  if (!autoScrollRequested) return;
-  autoScrollActive = false;
-  autoScrollLastFrame = 0;
-  window.cancelAnimationFrame(autoScrollFrame);
-  window.clearTimeout(autoScrollResumeTimer);
-  autoScrollResumeTimer = 0;
-  if (resumeDelay !== null) scheduleAutoScrollResume(resumeDelay);
-}
-
-function finishAutoScroll() {
-  autoScrollRequested = false;
-  autoScrollActive = false;
-  autoScrollLastFrame = 0;
-  window.cancelAnimationFrame(autoScrollFrame);
-  window.clearTimeout(autoScrollResumeTimer);
-  autoScrollResumeTimer = 0;
-}
-
-function advanceAutoScroll(timestamp) {
-  if (!autoScrollActive) return;
-  const lastFrame = autoScrollLastFrame || timestamp;
-  const elapsed = Math.min(timestamp - lastFrame, 50);
-  const scrollingElement = document.scrollingElement || document.documentElement || document.body;
-  const pageHeight = Math.max(scrollingElement.scrollHeight, document.documentElement.scrollHeight, document.body.scrollHeight);
-  const maxScroll = Math.max(0, pageHeight - window.innerHeight);
-  autoScrollLastFrame = timestamp;
-  const nextScrollTop = Math.min(maxScroll, window.scrollY + elapsed * autoScrollSpeed);
-  window.scrollTo(0, nextScrollTop);
-
-  if (nextScrollTop >= maxScroll) {
-    finishAutoScroll();
-    return;
-  }
-  autoScrollFrame = window.requestAnimationFrame(advanceAutoScroll);
-}
-
-function startAutoScroll() {
-  if (!autoScrollEnabled || !autoScrollRequested || !autoScrollReady || autoScrollActive || autoScrollResumeTimer || document.hidden || body.classList.contains("modal-open")) return;
-  autoScrollActive = true;
-  autoScrollLastFrame = 0;
-  autoScrollFrame = window.requestAnimationFrame(advanceAutoScroll);
-}
-
-if (isMobileViewport) {
-  // Taps should not interrupt the guided experience; only a deliberate swipe pauses it.
-  window.addEventListener("touchmove", () => pauseAutoScroll(1500), { passive: true });
-} else {
-  const pauseAutoScrollForActivity = () => pauseAutoScroll();
-  window.addEventListener("wheel", pauseAutoScrollForActivity, { passive: true });
-  window.addEventListener("pointerdown", pauseAutoScrollForActivity, { passive: true });
-  window.addEventListener("pointermove", pauseAutoScrollForActivity, { passive: true });
-  window.addEventListener("mouseout", (event) => {
-    if (!event.relatedTarget) pauseAutoScroll(700);
-  });
-}
-window.addEventListener("blur", () => pauseAutoScroll(null));
-window.addEventListener("focus", () => scheduleAutoScrollResume(700));
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) pauseAutoScroll(null);
-  else scheduleAutoScrollResume(700);
-});
-
 function seekPastMusicIntro() {
   if (!weddingMusic || !Number.isFinite(weddingMusic.duration)) return;
   weddingMusic.currentTime = weddingMusic.duration > musicStartSeconds
@@ -149,7 +67,6 @@ function seekPastMusicIntro() {
 
 function enterInvitation() {
   if (!intro || intro.classList.contains("is-opening")) return;
-  autoScrollRequested = autoScrollEnabled;
   if (weddingMusic) {
     if (weddingMusic.readyState >= HTMLMediaElement.HAVE_METADATA) seekPastMusicIntro();
     else skipIntroWhenMetadataLoads = true;
@@ -169,8 +86,6 @@ function enterInvitation() {
     body.classList.remove("intro-active");
     body.classList.remove("invitation-revealing");
     (heroTitle || main).focus({ preventScroll: true });
-    autoScrollReady = true;
-    startAutoScroll();
   }, reduceMotion ? 180 : 1040);
 }
 
@@ -247,7 +162,6 @@ function closeModal(modal = activeModal) {
   if (!modal) return;
   modal.hidden = true;
   body.classList.remove("modal-open");
-  scheduleAutoScrollResume(700);
   activeModal = null;
   modalTrigger?.focus();
   modalTrigger = null;
@@ -448,7 +362,6 @@ function openLightbox(index, trigger) {
 function closeLightbox() {
   lightbox.hidden = true;
   body.classList.remove("modal-open");
-  scheduleAutoScrollResume(700);
   lightboxTrigger?.focus();
 }
 
@@ -459,10 +372,6 @@ document.querySelector("[data-lightbox-prev]")?.addEventListener("click", () => 
 document.querySelector("[data-lightbox-next]")?.addEventListener("click", () => showLightboxImage(lightboxIndex + 1));
 
 document.addEventListener("keydown", (event) => {
-  if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " ", "Escape"].includes(event.key)) {
-    pauseAutoScroll();
-  }
-
   if (event.key === "Escape") {
     if (!lightbox.hidden) closeLightbox();
     else if (activeModal) closeModal();
