@@ -9,12 +9,33 @@ let skipIntroWhenMetadataLoads = false;
 const main = document.querySelector("#main-content");
 const heroTitle = document.querySelector("#hero-title");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const RSVP_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzJAVL7HEtQYlOqZNUy-aAK7STp4eqWeczwQoUv0LGr2Xd7oTFzfDfKgg-8F-j8vlIP6g/exec";
+const invitationSalutation = document.querySelector("[data-invitation-salutation]");
+const invitationGuest = document.querySelector("[data-invitation-guest]");
 let autoScrollRequested = false;
 let autoScrollReady = false;
 let autoScrollActive = false;
 let autoScrollFrame = 0;
 let autoScrollLastFrame = 0;
 let autoScrollResumeTimer = 0;
+
+async function loadPersonalizedInvitation() {
+  const guestCode = new URLSearchParams(window.location.search).get("guest")?.trim();
+  if (!guestCode || !invitationSalutation || !invitationGuest) return;
+
+  try {
+    const response = await fetch(`${RSVP_SHEETS_ENDPOINT}?action=guest&code=${encodeURIComponent(guestCode)}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.ok || !data.guest) return;
+    invitationSalutation.textContent = data.guest.salutation || "TRÂN TRỌNG KÍNH MỜI";
+    invitationGuest.textContent = data.guest.name || "Quý Khách";
+  } catch (_) {
+    // The generic invitation remains visible when the personal link cannot be loaded.
+  }
+}
+
+loadPersonalizedInvitation();
 
 function scheduleAutoScrollResume(delay = 4000) {
   window.clearTimeout(autoScrollResumeTimer);
@@ -240,8 +261,24 @@ function validateForm(form) {
   return valid;
 }
 
-function handleForm(form, storageKey, successSelector) {
-  form.addEventListener("submit", (event) => {
+async function sendToGoogleSheets(type, data) {
+  if (!RSVP_SHEETS_ENDPOINT) {
+    throw new Error("Biểu mẫu chưa được kết nối với Google Sheets.");
+  }
+
+  const payload = { ...data, type };
+  if (type === "rsvp" && data.attendance !== "yes") payload.guestCount = "";
+
+  await fetch(RSVP_SHEETS_ENDPOINT, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+}
+
+function handleForm(form, storageKey, successSelector, submitData = null) {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!validateForm(form)) {
       form.querySelector(".is-invalid input, .is-invalid textarea")?.focus();
@@ -254,35 +291,53 @@ function handleForm(form, storageKey, successSelector) {
     submit.textContent = "ĐANG GỬI...";
     const data = Object.fromEntries(new FormData(form).entries());
 
-    window.setTimeout(() => {
-      const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      existing.push({ ...data, createdAt: new Date().toISOString() });
-      localStorage.setItem(storageKey, JSON.stringify(existing));
+    try {
+      if (submitData) await submitData(data);
+      if (storageKey) {
+        const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        existing.push({ ...data, createdAt: new Date().toISOString() });
+        localStorage.setItem(storageKey, JSON.stringify(existing));
+      }
       submit.textContent = originalText;
       submit.disabled = false;
       form.hidden = true;
       form.closest(".modal-panel").querySelector(successSelector).hidden = false;
-    }, reduceMotion ? 100 : 650);
+    } catch (error) {
+      submit.textContent = originalText;
+      submit.disabled = false;
+      const note = form.querySelector(".form-note");
+      if (note) note.textContent = error.message || "Không gửi được xác nhận. Vui lòng thử lại.";
+    }
   });
 }
 
 const rsvpForm = document.querySelector("[data-rsvp-form]");
 const wishesForm = document.querySelector("[data-wishes-form]");
-if (rsvpForm) handleForm(rsvpForm, "wedding-rsvp-preview", "[data-rsvp-success]");
-if (wishesForm) handleForm(wishesForm, "wedding-wishes-preview", "[data-wishes-success]");
+if (rsvpForm) handleForm(rsvpForm, null, "[data-rsvp-success]", (data) => sendToGoogleSheets("rsvp", data));
+if (wishesForm) handleForm(wishesForm, null, "[data-wishes-success]", async (data) => { await sendToGoogleSheets("wish", data); window.setTimeout(loadGuestbook, 1200); });
 
 const galleryImages = [
-  { src: "assets/gallery-wide.jpg", alt: "Phan Vũ hôn Quỳnh Như bên bờ biển" },
-  { src: "assets/gallery-facing.jpg", alt: "Phan Vũ và Quỳnh Như nhìn nhau bên bờ biển" },
-  { src: "assets/gallery-kiss.jpg", alt: "Phan Vũ và Quỳnh Như trao nhau nụ hôn" },
+  { src: "assets/cuoi-1.jpg", alt: "Ảnh cưới 1 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-2.jpg", alt: "Ảnh cưới 2 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-3.jpg", alt: "Ảnh cưới 3 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-4.jpg", alt: "Ảnh cưới 4 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-5.jpg", alt: "Ảnh cưới 5 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-6.jpg", alt: "Ảnh cưới 6 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-7.jpg", alt: "Ảnh cưới 7 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-8.jpg", alt: "Ảnh cưới 8 của Phan Vũ và Quỳnh Như" },
+  { src: "assets/cuoi-9.jpg", alt: "Ảnh cưới 9 của Phan Vũ và Quỳnh Như" },
 ];
 
 const gallery = document.querySelector("[data-gallery]");
 const carouselImage = document.querySelector("[data-carousel-image]");
 const carouselCurrent = document.querySelector("[data-carousel-current]");
+const carouselTotal = document.querySelector("[data-carousel-total]");
+const carouselStage = gallery?.querySelector(".carousel-stage");
+const carouselThumbnailStrip = gallery?.querySelector(".carousel-thumbnails");
 const carouselThumbnails = [...document.querySelectorAll("[data-carousel-index]")];
 let carouselIndex = 0;
 let carouselPointerStart = null;
+carouselTotal.textContent = String(galleryImages.length).padStart(2, "0");
 
 function showCarouselImage(index) {
   carouselIndex = (index + galleryImages.length) % galleryImages.length;
@@ -294,6 +349,16 @@ function showCarouselImage(index) {
     const active = thumbnailIndex === carouselIndex;
     thumbnail.classList.toggle("is-active", active);
     thumbnail.setAttribute("aria-pressed", String(active));
+    if (active && carouselThumbnailStrip) {
+      const stripBounds = carouselThumbnailStrip.getBoundingClientRect();
+      const thumbnailBounds = thumbnail.getBoundingClientRect();
+      const scrollDelta = thumbnailBounds.left < stripBounds.left
+        ? thumbnailBounds.left - stripBounds.left
+        : thumbnailBounds.right > stripBounds.right
+          ? thumbnailBounds.right - stripBounds.right
+          : 0;
+      if (scrollDelta) carouselThumbnailStrip.scrollBy({ left: scrollDelta, behavior: reduceMotion ? "auto" : "smooth" });
+    }
   });
 }
 
@@ -303,17 +368,17 @@ gallery?.querySelector("[data-carousel-open]").addEventListener("click", (event)
 carouselThumbnails.forEach((thumbnail) => {
   thumbnail.addEventListener("click", () => showCarouselImage(Number(thumbnail.dataset.carouselIndex)));
 });
-gallery?.addEventListener("pointerdown", (event) => {
+carouselStage?.addEventListener("pointerdown", (event) => {
   carouselPointerStart = event.clientX;
 });
-gallery?.addEventListener("pointerup", (event) => {
+carouselStage?.addEventListener("pointerup", (event) => {
   if (carouselPointerStart === null) return;
   const distance = event.clientX - carouselPointerStart;
   carouselPointerStart = null;
   if (Math.abs(distance) < 45) return;
   showCarouselImage(carouselIndex + (distance < 0 ? 1 : -1));
 });
-gallery?.addEventListener("pointercancel", () => {
+carouselStage?.addEventListener("pointercancel", () => {
   carouselPointerStart = null;
 });
 gallery?.addEventListener("keydown", (event) => {
@@ -383,3 +448,96 @@ document.addEventListener("keydown", (event) => {
     first.focus();
   }
 });
+
+const guestbookList = document.querySelector("[data-guestbook-list]");
+const guestbookStatus = document.querySelector("[data-guestbook-status]");
+const guestbookViewport = document.querySelector("[data-guestbook-viewport]");
+let guestbookPaused = false;
+let displayedWishKeys = new Set();
+
+function formatWishDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
+
+function createWishEntry(wish) {
+  const entry = document.createElement("article");
+  entry.className = "guestbook-entry";
+  const meta = document.createElement("div");
+  meta.className = "guestbook-entry__meta";
+  const name = document.createElement("strong");
+  name.textContent = wish.name || "Khách mời thân thương";
+  meta.append(name);
+  const date = formatWishDate(wish.createdAt);
+  if (date) {
+    const time = document.createElement("time");
+    time.textContent = date;
+    meta.append(time);
+  }
+  const message = document.createElement("p");
+  message.textContent = wish.message || "";
+  entry.append(meta, message);
+  return entry;
+}
+
+function wishKey(wish) {
+  return `${wish.createdAt || ""}|${wish.name || ""}|${wish.message || ""}`;
+}
+
+function scrollGuestbookToLatest(smooth = false) {
+  if (!guestbookViewport || guestbookPaused) return;
+  const behavior = smooth && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto";
+  guestbookViewport.scrollTo({ top: guestbookViewport.scrollHeight, behavior });
+}
+
+async function loadGuestbook(isRefresh = false) {
+  if (!guestbookList || !guestbookStatus) return;
+  if (!isRefresh) guestbookStatus.textContent = "Đang tải lời chúc…";
+  try {
+    const response = await fetch(`${RSVP_SHEETS_ENDPOINT}?action=wishes`, { cache: "no-store" });
+    if (!response.ok) throw new Error("Không tải được lời chúc.");
+    const data = await response.json();
+    const wishes = Array.isArray(data.wishes) ? data.wishes : [];
+    if (!wishes.length) {
+      guestbookList.replaceChildren();
+      displayedWishKeys = new Set();
+      const empty = document.createElement("p");
+      empty.className = "guestbook__empty";
+      empty.textContent = "Những lời chúc đầu tiên sẽ được lưu tại đây.";
+      guestbookList.append(empty);
+      guestbookStatus.textContent = "";
+      return;
+    }
+    const nextWishKeys = new Set(wishes.map(wishKey));
+    const hasNewWish = isRefresh && wishes.some((wish) => !displayedWishKeys.has(wishKey(wish)));
+    if (isRefresh && !hasNewWish) {
+      guestbookStatus.textContent = `${wishes.length} lời chúc mới nhất`;
+      return;
+    }
+    const previousScrollTop = guestbookViewport.scrollTop;
+    guestbookList.replaceChildren();
+    wishes.forEach((wish) => guestbookList.append(createWishEntry(wish)));
+    displayedWishKeys = nextWishKeys;
+    guestbookStatus.textContent = `${wishes.length} lời chúc mới nhất`;
+    requestAnimationFrame(() => {
+      if (guestbookPaused) guestbookViewport.scrollTop = previousScrollTop;
+      else scrollGuestbookToLatest(hasNewWish);
+    });
+  } catch (error) {
+    guestbookList.replaceChildren();
+    const empty = document.createElement("p");
+    empty.className = "guestbook__empty";
+    empty.textContent = "Chưa thể tải lời chúc. Vui lòng thử lại sau.";
+    guestbookList.append(empty);
+    guestbookStatus.textContent = "";
+  }
+}
+
+if (guestbookViewport) {
+  ["pointerenter", "touchstart"].forEach((eventName) => guestbookViewport.addEventListener(eventName, () => { guestbookPaused = true; }, { passive: true }));
+  ["pointerleave", "touchend", "touchcancel"].forEach((eventName) => guestbookViewport.addEventListener(eventName, () => { guestbookPaused = false; scrollGuestbookToLatest(); }, { passive: true }));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) scrollGuestbookToLatest(); });
+  loadGuestbook();
+  window.setInterval(() => loadGuestbook(true), 15000);
+}
